@@ -1,0 +1,6 @@
+[  649.585729] pebs disable
+[  651.847741] run_bench.sh (3798): drop_caches: 3
+[  653.867587] pebs_init
+[  653.887697] [error htmm__perf_event_open failure] event_fd: -3
+[  653.888532] htmm__perf_event_init failure... ERROR:-1
+[  653.890722] pebs disable

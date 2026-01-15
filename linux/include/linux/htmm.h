@@ -1,3 +1,4 @@
+#include <asm/pgtable_types.h>
 #include <uapi/linux/perf_event.h>
 
 #define DEFERRED_SPLIT_ISOLATED 1

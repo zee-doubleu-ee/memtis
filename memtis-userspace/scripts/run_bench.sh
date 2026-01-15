@@ -10,7 +10,7 @@ MEM_NODES=($(ls /sys/devices/system/node | grep node | awk -F 'node' '{print $NF
 
 CGROUP_NAME="htmm"
 ###### update DIR!
-DIR=/home/taehyung/workspace/memtis/memtis-userspace
+DIR=/home/jbyoon/memtis/memtis-userspace
 
 CONFIG_PERF=off
 CONFIG_NS=off
@@ -104,7 +104,7 @@ function func_main() {
     fi
     
     # use 20 threads 
-    PINNING="taskset -c 0-19"
+    PINNING="taskset -c 0-15"
 
     echo "-----------------------"
     echo "NVM RATIO: ${NVM_RATIO}"
@@ -144,6 +144,9 @@ function func_main() {
 	    ${PINNING} ${DIR}/bin/launch_bench_nopid ${BENCH_RUN} < ${BENCH_ARG} 2>&1 \
 	    | tee ${LOG_DIR}/output.log
     else
+
+        echo "DEBUG_CMD : ${DIR}/bin/launch_bench ${BENCH_RUN}"
+
 	${TIME} -f "execution time %e (s)" \
 	    ${PINNING} ${DIR}/bin/launch_bench ${BENCH_RUN} 2>&1 \
 	    | tee ${LOG_DIR}/output.log
