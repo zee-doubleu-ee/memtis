@@ -1,16 +1,20 @@
 #!/bin/bash
 
+SCRIPTS_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+DIR=$(realpath -m "$SCRIPTS_DIR/..")
+export USPACE_DIR=$DIR
+
+
 if [ -z $NTHREADS ]; then
     NTHREADS=$(grep -c processor /proc/cpuinfo)
 fi
 export NTHREADS
 NCPU_NODES=$(cat /sys/devices/system/node/has_cpu | awk -F '-' '{print $NF+1}')
+NCPU_NODE0=$(cat /sys/devices/system/node/node0/cpulist)
 NMEM_NODES=$(cat /sys/devices/system/node/has_memory | awk -F '-' '{print $NF+1}')
 MEM_NODES=($(ls /sys/devices/system/node | grep node | awk -F 'node' '{print $NF}'))
 
 CGROUP_NAME="htmm"
-###### update DIR!
-DIR=/home/taehyung/workspace/memtis/memtis-userspace
 
 CONFIG_PERF=off
 CONFIG_NS=off
@@ -21,47 +25,47 @@ DATE=""
 VER=""
 
 function func_cache_flush() {
-    echo 3 > /proc/sys/vm/drop_caches
+    echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null
     free
     return
 }
 
 function func_memtis_setting() {
-    echo 199 | tee /sys/kernel/mm/htmm/htmm_sample_period
-    echo 100007 | tee /sys/kernel/mm/htmm/htmm_inst_sample_period
-    echo 1 | tee /sys/kernel/mm/htmm/htmm_thres_hot
-    echo 2 | tee /sys/kernel/mm/htmm/htmm_split_period
-    echo 100000 | tee /sys/kernel/mm/htmm/htmm_adaptation_period
-    echo 2000000 | tee /sys/kernel/mm/htmm/htmm_cooling_period
-    echo 2 | tee /sys/kernel/mm/htmm/htmm_mode
-    echo 500 | tee /sys/kernel/mm/htmm/htmm_demotion_period_in_ms
-    echo 500 | tee /sys/kernel/mm/htmm/htmm_promotion_period_in_ms
-    echo 4 | tee /sys/kernel/mm/htmm/htmm_gamma
+    echo 199 | sudo tee /sys/kernel/mm/htmm/htmm_sample_period > /dev/null
+    echo 100007 | sudo tee /sys/kernel/mm/htmm/htmm_inst_sample_period > /dev/null
+    echo 1 | sudo tee /sys/kernel/mm/htmm/htmm_thres_hot > /dev/null
+    echo 2 | sudo tee /sys/kernel/mm/htmm/htmm_split_period > /dev/null
+    echo 100000 | sudo tee /sys/kernel/mm/htmm/htmm_adaptation_period > /dev/null
+    echo 2000000 | sudo tee /sys/kernel/mm/htmm/htmm_cooling_period > /dev/null
+    echo 2 | sudo tee /sys/kernel/mm/htmm/htmm_mode > /dev/null
+    echo 500 | sudo tee /sys/kernel/mm/htmm/htmm_demotion_period_in_ms > /dev/null
+    echo 500 | sudo tee /sys/kernel/mm/htmm/htmm_promotion_period_in_ms > /dev/null
+    echo 4 | sudo tee /sys/kernel/mm/htmm/htmm_gamma > /dev/null
     ###  cpu cap (per mille) for ksampled
-    echo 30 | tee /sys/kernel/mm/htmm/ksampled_soft_cpu_quota
+    echo 30 | sudo tee /sys/kernel/mm/htmm/ksampled_soft_cpu_quota > /dev/null
 
     if [[ "x${CONFIG_NS}" == "xoff" ]]; then
-	echo 1 | tee /sys/kernel/mm/htmm/htmm_thres_split
+	echo 1 | sudo tee /sys/kernel/mm/htmm/htmm_thres_split > /dev/null
     else
-	echo 0 | tee /sys/kernel/mm/htmm/htmm_thres_split
+	echo 0 | sudo tee /sys/kernel/mm/htmm/htmm_thres_split > /dev/null
     fi
 
     if [[ "x${CONFIG_NW}" == "xoff" ]]; then
-	echo 0 | tee /sys/kernel/mm/htmm/htmm_nowarm
+	echo 0 | sudo tee /sys/kernel/mm/htmm/htmm_nowarm > /dev/null
     else
-	echo 1 | tee /sys/kernel/mm/htmm/htmm_nowarm
+	echo 1 | sudo tee /sys/kernel/mm/htmm/htmm_nowarm > /dev/null
     fi
 
     if [[ "x${CONFIG_CXL_MODE}" == "xon" ]]; then
 	${DIR}/scripts/set_uncore_freq.sh on
-	echo "enabled" | tee /sys/kernel/mm/htmm/htmm_cxl_mode
+	echo "enabled" | sudo tee /sys/kernel/mm/htmm/htmm_cxl_mode > /dev/null
     else
 	${DIR}/scripts/set_uncore_freq.sh off
-	echo "disabled" | tee /sys/kernel/mm/htmm/htmm_cxl_mode
+	echo "disabled" | sudo tee /sys/kernel/mm/htmm/htmm_cxl_mode > /dev/null
     fi
 
-    echo "always" | tee /sys/kernel/mm/transparent_hugepage/enabled
-    echo "always" | tee /sys/kernel/mm/transparent_hugepage/defrag
+    echo "always" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled > /dev/null
+    echo "always" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag > /dev/null
 }
 
 function func_prepare() {
@@ -70,7 +74,7 @@ function func_prepare() {
 	sudo sysctl kernel.perf_event_max_sample_rate=100000
 
 	# disable automatic numa balancing
-	sudo echo 0 > /proc/sys/kernel/numa_balancing
+	echo 0 | sudo tee /proc/sys/kernel/numa_balancing > /dev/null
 	# set configs
 	func_memtis_setting
 	
@@ -103,21 +107,19 @@ function func_main() {
 	PERF=""
     fi
     
-    # use 20 threads 
-    PINNING="taskset -c 0-19"
+    # Pin to one numa node
+    PINNING="taskset -c $NCPU_NODE0"
 
     echo "-----------------------"
     echo "NVM RATIO: ${NVM_RATIO}"
-    echo "${DATE}"
-    echo "-----------------------"
 
     # make directory for results
     mkdir -p ${DIR}/results/${BENCH_NAME}/${VER}/${NVM_RATIO}
     LOG_DIR=${DIR}/results/${BENCH_NAME}/${VER}/${NVM_RATIO}
 
     # set memcg for htmm
-    sudo ${DIR}/scripts/set_htmm_memcg.sh htmm remove
-    sudo ${DIR}/scripts/set_htmm_memcg.sh htmm $$ enable
+    sudo ${DIR}/scripts/set_htmm_memcg.sh remove htmm
+    sudo ${DIR}/scripts/set_htmm_memcg.sh add htmm $$ enable
     sudo ${DIR}/scripts/set_mem_size.sh htmm 0 ${BENCH_DRAM}
     sleep 2
 
@@ -134,6 +136,8 @@ function func_main() {
     func_cache_flush
     sleep 2
 
+    echo "Running ${BENCH_NAME} with command"
+    echo "${BENCH_RUN}"
     ${DIR}/scripts/memory_stat.sh ${LOG_DIR} &
     if [[ "x${BENCH_NAME}" =~ "xsilo" ]]; then
 	${TIME} -f "execution time %e (s)" \
@@ -164,12 +168,12 @@ function func_main() {
 
     sudo dmesg -c > ${LOG_DIR}/dmesg.txt
     # disable htmm
-    sudo ${DIR}/scripts/set_htmm_memcg.sh htmm $$ disable
+    sudo ${DIR}/scripts/set_htmm_memcg.sh add htmm $$ disable
 }
 
 function func_usage() {
     echo
-    echo -e "Usage: $0 [-b benchmark name] [-s socket_mode] [-w GB] ..."
+    echo -e "Usage: $0 [-b <benchmark name>] [-R <ratio>] ..."
     echo
     echo "  -B,   --benchmark   [arg]    benchmark name to run. e.g., graph500, Liblinear, etc"
     echo "  -R,   --ratio       [arg]    fast tier size vs. capacity tier size: \"1:16\", \"1:8\", or \"1:2\""
@@ -268,3 +272,5 @@ fi
 
 func_prepare
 func_main
+#!/bin/bash
+

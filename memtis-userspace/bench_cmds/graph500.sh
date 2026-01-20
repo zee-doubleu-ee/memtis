@@ -1,7 +1,7 @@
 #!/bin/bash
 
-BIN=/path/to/benchmark
-BENCH_RUN="${BIN}/omp-csr -s 27 -e 15 -V"
+BIN="${USPACE_DIR}/bench_dir/graph500/src"
+BENCH_RUN="${BIN}/graph500_reference_bfs_sssp 27 15"
 BENCH_DRAM=""
 
 

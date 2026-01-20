@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BIN=/path/to/benchmark
+BIN="${USPACE_DIR}/bench_dir/XSBench/openmp-threading"
 BENCH_RUN="${BIN}/XSBench -t 20 -g 130000 -p 30000000"
 BENCH_DRAM=""
 
@@ -18,7 +18,6 @@ elif [[ "x${NVM_RATIO}" == "x1:1" ]]; then
 elif [[ "x${NVM_RATIO}" == "x1:0" ]]; then
     BENCH_DRAM="75000MB"
 fi
-
 
 export BENCH_RUN
 export BENCH_DRAM

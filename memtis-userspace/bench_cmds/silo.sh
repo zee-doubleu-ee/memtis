@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BIN=/path/to/benchmark
+BIN="${USPACE_DIR}/bin"
 BENCH_RUN="${BIN}/dbtest --verbose --bench ycsb --num-threads 20 --scale-factor 400000 --ops-per-worker=1000000000 --slow-exit"
 BENCH_DRAM=""
 

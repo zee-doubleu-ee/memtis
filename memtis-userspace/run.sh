@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BENCHMARKS="XSBench gapbs-pr liblinear silo btree"
-BENCHMARKS="gapbs-pr"
+#BENCHMARKS="gapbs-pr"
 NVM_RATIO="1:16 1:8 1:2"
 
 sudo dmesg -c

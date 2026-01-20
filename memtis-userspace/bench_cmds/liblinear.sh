@@ -1,5 +1,5 @@
 #!/bin/bash
-BENCH_BIN=/path/to/benchmark
+BENCH_BIN="${USPACE_DIR}/bench_dir/liblinear-multicore-2.50"
 
 # anon footprint 79640MB
 # file footprint 21581MB

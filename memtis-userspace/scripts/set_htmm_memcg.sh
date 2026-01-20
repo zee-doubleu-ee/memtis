@@ -1,29 +1,36 @@
 #!/bin/bash
 
-CGROUP_NAME=$1
+COMMAND=$1
+CGROUP_NAME=$2
 CGROUP_DIR=/sys/fs/cgroup
-BASH_PID=$2
+BASH_PID=$3
 
-if [ "x$2" == "xremove" ]; then
+print_help() {
+     echo "$0 [ remove <cgroup name> | add <cgroup name> <bash pid> [enable | disable]]"
+}
+
+if [ "x$1" == "xremove" ]; then
 	sudo rmdir ${CGROUP_DIR}/${CGROUP_NAME}
         exit
+elif [ "x$1" != "xadd" ]; then
+	echo "$0 Invalid command..."
+	print_help
+	exit
 fi
 
 if [ ! -d "${CGROUP_DIR}/${CGROUP_NAME}" ]; then
 	sudo mkdir -p ${CGROUP_DIR}/${CGROUP_NAME}
 fi
 
-echo "+memory" | sudo tee ${CGROUP_DIR}/cgroup.subtree_control
-echo "+cpuset" | sudo tee ${CGROUP_DIR}/cgroup.subtree_control
+echo "+memory" | sudo tee ${CGROUP_DIR}/cgroup.subtree_control > /dev/null
+echo "+cpuset" | sudo tee ${CGROUP_DIR}/cgroup.subtree_control > /dev/null
 
 echo ${BASH_PID} | sudo tee ${CGROUP_DIR}/${CGROUP_NAME}/cgroup.procs
-if [ "x$3" == "xenable" ]; then
-    echo "enabled" | sudo tee ${CGROUP_DIR}/${CGROUP_NAME}/memory.htmm_enabled
+if [ "x$4" == "xenable" ]; then
+    echo "enabled" | sudo tee ${CGROUP_DIR}/${CGROUP_NAME}/memory.htmm_enabled > /dev/null
     exit
-elif [ "x$3" == "xdisable" ]; then
-    echo "disabled" | sudo tee ${CGROUP_DIR}/${CGROUP_NAME}/memory.htmm_enabled
+elif [ "x$4" == "xdisable" ]; then
+    echo "disabled" | sudo tee ${CGROUP_DIR}/${CGROUP_NAME}/memory.htmm_enabled > /dev/null
     exit
 fi
-
-echo "'set_htmm_memcg.sh' Invalid parameters...."
-echo "./set_htmm_memcg.sh [cgroup name] [bash pid] [\"enable\" or \"disable\"]"
+print_help

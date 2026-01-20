@@ -1,5 +1,10 @@
 # MEMTIS userspace
 
+## CASYS mini project
+We need to run everything in cxl-emulated mode.
+- ./run-with-cxl-mode.sh --> run all benchmarks in cxl-emulated mode
+- ./run-all-cxl.sh --> run all benchmarks on cxl - for emulation, it's using node-1 memory with processes running on node 0.
+
 ## For artifact evaluation
 1) Install benchmarks to ./bench\_dir
 
