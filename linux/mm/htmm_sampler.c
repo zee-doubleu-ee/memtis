@@ -125,6 +125,8 @@ static void pebs_disable(void)
     int cpu, event;
 
     printk("pebs disable\n");
+	if (!READ_ONCE(mem_event))
+		return;
     for (cpu = 0; cpu < CPUS_PER_SOCKET; cpu++) {
 	for (event = 0; event < N_HTMMEVENTS; event++) {
 	    if (mem_event[cpu][event])
@@ -219,6 +221,8 @@ static int ksamplingd(void *data)
 	    msleep_interruptible(10000);
 	    continue;
 	}
+
+	htmm_notifier_call_chain(HTMM_KSAMPLED_START, NULL);
 	
 	for (cpu = 0; cpu < CPUS_PER_SOCKET; cpu++) {
 	    for (event = 0; event < N_HTMMEVENTS; event++) {
@@ -316,6 +320,9 @@ static int ksamplingd(void *data)
 		} while (cond);
 	    }
 	}
+
+	htmm_notifier_call_chain(HTMM_KSAMPLED_END, NULL);
+
 	/* if ksampled_soft_cpu_quota is zero, disable dynamic pebs feature */
 	if (!ksampled_soft_cpu_quota)
 	    continue;

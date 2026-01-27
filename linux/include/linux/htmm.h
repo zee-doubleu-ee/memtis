@@ -80,6 +80,28 @@ struct htmm_event {
     __u64 addr;
 };
 
+enum htmm_event_t {
+    HTMM_ENABLE = 0,
+    HTMM_DISABLE,
+    HTMM_PROMOTE_START,
+    HTMM_PROMOTE_END,
+    HTMM_DEMOTE_START,
+    HTMM_DEMOTE_END,
+    HTMM_KSAMPLED_START,
+    HTMM_KSAMPLED_END,
+    NR_HTMM_EVENT_TYPES
+};
+
+struct htmm_migrate_info {
+    int node_id;
+    struct mem_cgroup_per_node *memcg_pn;
+};
+struct htmm_ksampled_info {};
+union htmm_notifier_data {
+    struct htmm_migrate_info migrate_info;
+    struct htmm_ksampled_info ksampled_info;
+};
+
 enum events {
     DRAMREAD = 0,
     NVMREAD = 1,
@@ -210,3 +232,8 @@ extern unsigned long get_memcg_promotion_watermark(unsigned long max_nr_pages);
 extern void kmigraterd_wakeup(int nid);
 extern int kmigraterd_init(void);
 extern void kmigraterd_stop(void);
+
+/* htmm notifier chains */
+extern int register_htmm_notifier(struct notifier_block *nb);
+extern int unregister_htmm_notifier(struct notifier_block *nb);
+int htmm_notifier_call_chain(enum htmm_event_t val, void *data);

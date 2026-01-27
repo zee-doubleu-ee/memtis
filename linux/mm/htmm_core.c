@@ -20,7 +20,23 @@
 #include "internal.h"
 #include <asm/pgtable.h>
 
+static BLOCKING_NOTIFIER_HEAD(htmm_notifier_chain);
+
+int register_htmm_notifier(struct notifier_block *nb) {
+	return blocking_notifier_chain_register(&htmm_notifier_chain, nb);
+}
+
+int unregister_htmm_notifier(struct notifier_block *nb) {
+	return blocking_notifier_chain_unregister(&htmm_notifier_chain, nb);
+}
+
+int htmm_notifier_call_chain(enum htmm_event_t val, void *data) {
+	return blocking_notifier_call_chain(&htmm_notifier_chain, val, data);
+}
+
 void htmm_mm_init(struct mm_struct *mm)
+// this is the reason why we need a parent process to launch the benchmark processes
+// rather than putting the running processes directly into the cgroup
 {
     struct mem_cgroup *memcg = get_mem_cgroup_from_mm(mm);
 
@@ -856,7 +872,6 @@ static void update_base_page(struct vm_area_struct *vma,
     struct mem_cgroup *memcg = get_mem_cgroup_from_mm(vma->vm_mm);
     unsigned long prev_accessed, prev_idx, cur_idx;
     bool hot;
-
     /* check cooling status and perform cooling if the page needs to be cooled */
     check_base_cooling(pginfo, page, false);
 
@@ -1437,3 +1452,7 @@ mmap_unlock:
 put_task:
     put_pid(pid_struct);
 }
+
+
+EXPORT_SYMBOL_GPL(register_htmm_notifier);
+EXPORT_SYMBOL_GPL(unregister_htmm_notifier);

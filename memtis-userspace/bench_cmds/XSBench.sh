@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BIN="${USPACE_DIR}/bench_dir/XSBench/openmp-threading"
-BENCH_RUN="${BIN}/XSBench -t 20 -g 130000 -p 30000000"
+BENCH_RUN="${BIN}/XSBench -t ${NTHREADS} -g 130000 -p 30000000"
 BENCH_DRAM=""
 
 

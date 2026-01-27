@@ -13,6 +13,7 @@
 #include <linux/rmap.h>
 #include <linux/delay.h>
 #include <linux/node.h>
+#include <linux/notifier.h>
 #include <linux/htmm.h>
 #include <linux/wait.h>
 #include <linux/sched.h>
@@ -938,6 +939,8 @@ static struct mem_cgroup_per_node *next_memcg_cand(pg_data_t *pgdat)
 static int kmigraterd_demotion(pg_data_t *pgdat)
 {
     const struct cpumask *cpumask = cpumask_of_node(pgdat->node_id);
+	union htmm_notifier_data ndata;
+	ndata.migrate_info.node_id = pgdat->node_id;
 
     if (!cpumask_empty(cpumask))
 	set_cpus_allowed_ptr(pgdat->kmigraterd, cpumask);
@@ -956,6 +959,9 @@ static int kmigraterd_demotion(pg_data_t *pgdat)
 	    msleep_interruptible(1000);
 	    continue;
 	}
+
+	ndata.migrate_info.memcg_pn = pn;
+	htmm_notifier_call_chain(HTMM_DEMOTE_START, &ndata);
 
 	memcg = pn->memcg;
 	if (!memcg || !memcg->htmm_enabled) {
@@ -991,6 +997,8 @@ static int kmigraterd_demotion(pg_data_t *pgdat)
 	//if (need_direct_demotion(pgdat, memcg))
 	  //  goto demotion;
 
+	htmm_notifier_call_chain(HTMM_DEMOTE_END, &ndata);
+
 	/* default: wait 50 ms */
 	wait_event_interruptible_timeout(pgdat->kmigraterd_wait,
 	    need_direct_demotion(pgdat, memcg),
@@ -1002,6 +1010,8 @@ static int kmigraterd_demotion(pg_data_t *pgdat)
 static int kmigraterd_promotion(pg_data_t *pgdat)
 {
     const struct cpumask *cpumask;
+	union htmm_notifier_data ndata;
+	ndata.migrate_info.node_id = pgdat->node_id;
 
     if (htmm_cxl_mode)
     	cpumask = cpumask_of_node(pgdat->node_id);
@@ -1024,6 +1034,9 @@ static int kmigraterd_promotion(pg_data_t *pgdat)
 	    msleep_interruptible(1000);
 	    continue;
 	}
+
+	ndata.migrate_info.memcg_pn = pn;
+	htmm_notifier_call_chain(HTMM_PROMOTE_START, &ndata);
 
 	memcg = pn->memcg;
 	if (!memcg || !memcg->htmm_enabled) {
@@ -1056,7 +1069,9 @@ static int kmigraterd_promotion(pg_data_t *pgdat)
 	if (need_lowertier_promotion(pgdat, memcg)) {
 	    promote_node(pgdat, memcg);
 	}
-
+	
+	htmm_notifier_call_chain(HTMM_PROMOTE_END, &ndata);
+	
 	msleep_interruptible(htmm_promotion_period_in_ms);
     }
 
@@ -1069,16 +1084,17 @@ static int kmigraterd(void *p)
     int nid = pgdat->node_id;
 
     if (htmm_cxl_mode) {
-	if (nid == 0)
-	    return kmigraterd_demotion(pgdat);
-	else
-	    return kmigraterd_promotion(pgdat);
+		if (nid == 0)
+			return kmigraterd_demotion(pgdat);
+		else
+			return kmigraterd_promotion(pgdat);
     }
 
+	// This code assumes there are only two tiers
     if (node_is_toptier(nid))
-	return kmigraterd_demotion(pgdat);
+		return kmigraterd_demotion(pgdat);
     else
-	return kmigraterd_promotion(pgdat);
+		return kmigraterd_promotion(pgdat);
 }
 
 void kmigraterd_wakeup(int nid)
@@ -1090,16 +1106,16 @@ void kmigraterd_wakeup(int nid)
 static void kmigraterd_run(int nid)
 {
     pg_data_t *pgdat = NODE_DATA(nid);
-    if (!pgdat || pgdat->kmigraterd)
-	return;
-
-    init_waitqueue_head(&pgdat->kmigraterd_wait);
-
-    pgdat->kmigraterd = kthread_run(kmigraterd, pgdat, "kmigraterd%d", nid);
-    if (IS_ERR(pgdat->kmigraterd)) {
-	pr_err("Fails to start kmigraterd on node %d\n", nid);
-	pgdat->kmigraterd = NULL;
-    }
+	spin_lock(&pgdat->kmigraterd_lock);
+	if (!pgdat->kmigraterd) {
+		init_waitqueue_head(&pgdat->kmigraterd_wait);
+		pgdat->kmigraterd = kthread_run(kmigraterd, pgdat, "kmigraterd%d", nid);
+	}
+	spin_unlock(&pgdat->kmigraterd_lock);
+	if (IS_ERR(pgdat->kmigraterd)) {
+		pr_err("Fails to start kmigraterd on node %d\n", nid);
+		pgdat->kmigraterd = NULL;
+	}
 }
 
 void kmigraterd_stop(void)
@@ -1107,12 +1123,17 @@ void kmigraterd_stop(void)
     int nid;
 
     for_each_node_state(nid, N_MEMORY) {
-	struct task_struct *km = NODE_DATA(nid)->kmigraterd;
+		struct task_struct *kmigraterd;
+		pg_data_t *pgdat = NODE_DATA(nid);
 
-	if (km) {
-	    kthread_stop(km);
-	    NODE_DATA(nid)->kmigraterd = NULL;
-	}
+		spin_lock(&pgdat->kmigraterd_lock);
+		kmigraterd = pgdat->kmigraterd;
+		pgdat->kmigraterd = NULL;
+		spin_unlock(&pgdat->kmigraterd_lock);
+
+		if (kmigraterd) {
+			kthread_stop(kmigraterd);
+		}
     }
 }
 
@@ -1121,6 +1142,6 @@ int kmigraterd_init(void)
     int nid;
 
     for_each_node_state(nid, N_MEMORY)
-	kmigraterd_run(nid);
+		kmigraterd_run(nid);
     return 0;
 }
