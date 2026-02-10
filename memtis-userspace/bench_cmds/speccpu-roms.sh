@@ -12,19 +12,19 @@ BENCH_DRAM=""
 #####
 
 if [[ "x${NVM_RATIO}" == "x1:16" ]]; then
-    BENCH_DRAM="647MB"
+    BENCH_DRAM="647M"
 elif [[ "x${NVM_RATIO}" == "x1:8" ]]; then
-    BENCH_DRAM="1222MB"
+    BENCH_DRAM="1222M"
 elif [[ "x${NVM_RATIO}" == "x1:4" ]]; then
-    BENCH_DRAM="2200MB"
+    BENCH_DRAM="2200M"
 elif [[ "x${NVM_RATIO}" == "x1:2" ]]; then
-    BENCH_DRAM="3900MB"
+    BENCH_DRAM="3900M"
 elif [[ "x${NVM_RATIO}" == "x1:1" ]]; then
-    BENCH_DRAM="5500MB"
+    BENCH_DRAM="5500M"
 elif [[ "x${NVM_RATIO}" == "x2:1" ]]; then
-    BENCH_DRAM="7330MB"
+    BENCH_DRAM="7330M"
 elif [[ "x${NVM_RATIO}" == "x3:1" ]]; then
-    BENCH_DRAM="8250MB"
+    BENCH_DRAM="8250M"
 fi
 
 export BENCH_ARG

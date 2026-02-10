@@ -1737,7 +1737,7 @@ static int symbol__disassemble_bpf(struct symbol *sym,
 		goto out;
 	}
 	init_disassemble_info(&info, s,
-			      (fprintf_ftype) fprintf);
+			      (fprintf_ftype) fprintf, NULL);
 
 	info.arch = bfd_get_arch(bfdf);
 	info.mach = bfd_get_mach(bfdf);

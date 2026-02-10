@@ -11,19 +11,19 @@ BENCH_DRAM=""
 # twitter.sg: ~12600MB 
 
 if [[ "x${NVM_RATIO}" == "x1:32" ]]; then
-    BENCH_DRAM="382MB"
+    BENCH_DRAM="382M"
 elif [[ "x${NVM_RATIO}" == "x1:16" ]]; then
-    BENCH_DRAM="740MB"
+    BENCH_DRAM="740M"
 elif [[ "x${NVM_RATIO}" == "x1:8" ]]; then
-    BENCH_DRAM="1400MB"
+    BENCH_DRAM="1400M"
 elif [[ "x${NVM_RATIO}" == "x1:4" ]]; then
-    BENCH_DRAM="2520MB"
+    BENCH_DRAM="2520M"
 elif [[ "x${NVM_RATIO}" == "x1:2" ]]; then
-    BENCH_DRAM="4200MB"
+    BENCH_DRAM="4200M"
 elif [[ "x${NVM_RATIO}" == "x1:1" ]]; then
-    BENCH_DRAM="6300MB"
+    BENCH_DRAM="6300M"
 elif [[ "x${NVM_RATIO}" == "x1:0" ]]; then
-    BENCH_DRAM="70000MB"
+    BENCH_DRAM="70000M"
 fi
 
 

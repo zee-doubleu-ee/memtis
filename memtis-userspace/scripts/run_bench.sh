@@ -57,10 +57,10 @@ function func_memtis_setting() {
     fi
 
     if [[ "x${CONFIG_CXL_MODE}" == "xon" ]]; then
-	${DIR}/scripts/set_uncore_freq.sh on
+	#${DIR}/scripts/set_uncore_freq.sh on
 	echo "enabled" | sudo tee /sys/kernel/mm/htmm/htmm_cxl_mode > /dev/null
     else
-	${DIR}/scripts/set_uncore_freq.sh off
+	#${DIR}/scripts/set_uncore_freq.sh off
 	echo "disabled" | sudo tee /sys/kernel/mm/htmm/htmm_cxl_mode > /dev/null
     fi
 
@@ -74,7 +74,7 @@ function func_prepare() {
 	sudo sysctl kernel.perf_event_max_sample_rate=100000
 
 	# disable automatic numa balancing
-	echo 0 | sudo tee /proc/sys/kernel/numa_balancing > /dev/null
+	# echo 0 | sudo tee /proc/sys/kernel/numa_balancing > /dev/null
 	# set configs
 	func_memtis_setting
 	
@@ -118,9 +118,14 @@ function func_main() {
     LOG_DIR=${DIR}/results/${BENCH_NAME}/${VER}/${NVM_RATIO}
 
     # set memcg for htmm
-    sudo ${DIR}/scripts/set_htmm_memcg.sh remove htmm
-    sudo ${DIR}/scripts/set_htmm_memcg.sh add htmm $$ enable
-    sudo ${DIR}/scripts/set_mem_size.sh htmm 0 ${BENCH_DRAM}
+    # sudo ${DIR}/scripts/set_htmm_memcg.sh remove htmm
+    sudo cgdelete -g memory:htmm
+    #sudo ${DIR}/scripts/set_htmm_memcg.sh add htmm $$ enable
+    sudo cgcreate -g memory:htmm
+    echo $$ | sudo tee /sys/fs/cgroup/htmm/cgroup.procs
+    echo "enabled" | sudo tee /sys/fs/cgroup/htmm/memory.htmm_enabled
+    #sudo ${DIR}/scripts/set_mem_size.sh htmm 0 ${BENCH_DRAM}
+    echo ${BENCH_DRAM} | sudo tee /sys/fs/cgroup/htmm/memory.max_at_node0
     sleep 2
 
     # check dram size
@@ -168,7 +173,8 @@ function func_main() {
 
     sudo dmesg -c > ${LOG_DIR}/dmesg.txt
     # disable htmm
-    sudo ${DIR}/scripts/set_htmm_memcg.sh add htmm $$ disable
+    #sudo ${DIR}/scripts/set_htmm_memcg.sh add htmm $$ disable
+    echo "disabled" | sudo tee /sys/fs/cgroup/htmm/memory.htmm_enabled
 }
 
 function func_usage() {

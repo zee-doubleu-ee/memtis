@@ -2735,7 +2735,15 @@ static void migrate_vma_prepare(struct migrate_vma *migrate)
 		if (!page || (migrate->src[i] & MIGRATE_PFN_MIGRATE))
 			continue;
 
+#ifdef CONFIG_HTMM
+		struct rmap_walk_arg rmap_walk_arg = {
+			.arg = page,
+			.unmap_clean = false,
+		};
+		remove_migration_pte(page, migrate->vma, addr, &rmap_walk_arg);
+#else
 		remove_migration_pte(page, migrate->vma, addr, page);
+#endif
 
 		migrate->src[i] = 0;
 		unlock_page(page);
