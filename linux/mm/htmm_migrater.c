@@ -17,6 +17,7 @@
 #include <linux/htmm.h>
 #include <linux/wait.h>
 #include <linux/sched.h>
+#include <linux/perf_event.h>
 
 #include "internal.h"
 
@@ -940,10 +941,13 @@ static int kmigraterd_demotion(pg_data_t *pgdat)
 {
     const struct cpumask *cpumask = cpumask_of_node(pgdat->node_id);
 	union htmm_notifier_data ndata;
+	u64 enabled, running, old_counter = 0;
 	ndata.migrate_info.node_id = pgdat->node_id;
 
     if (!cpumask_empty(cpumask))
 	set_cpus_allowed_ptr(pgdat->kmigraterd, cpumask);
+
+	perf_event_enable(pgdat->kmigraterd_event);
 
     for ( ; ; ) {
 	struct mem_cgroup_per_node *pn;
@@ -1011,6 +1015,7 @@ static int kmigraterd_promotion(pg_data_t *pgdat)
 {
     const struct cpumask *cpumask;
 	union htmm_notifier_data ndata;
+	u64 enabled, running;
 	ndata.migrate_info.node_id = pgdat->node_id;
 
     if (htmm_cxl_mode)
@@ -1019,13 +1024,15 @@ static int kmigraterd_promotion(pg_data_t *pgdat)
 	cpumask = cpumask_of_node(pgdat->node_id - 2);
 
     if (!cpumask_empty(cpumask))
-	set_cpus_allowed_ptr(pgdat->kmigraterd, cpumask);
-
+		set_cpus_allowed_ptr(pgdat->kmigraterd, cpumask);
+	
+	perf_event_enable(pgdat->kmigraterd_event);
+	
     for ( ; ; ) {
 	struct mem_cgroup_per_node *pn;
 	struct mem_cgroup *memcg;
 	LIST_HEAD(split_list);
-
+	
 	if (kthread_should_stop())
 	    break;
 
@@ -1082,6 +1089,22 @@ static int kmigraterd(void *p)
 {
     pg_data_t *pgdat = (pg_data_t *)p;
     int nid = pgdat->node_id;
+
+	struct perf_event_attr attr = {
+		.type = PERF_TYPE_HARDWARE,
+		.size = sizeof(struct perf_event_attr),
+		.config = PERF_COUNT_HW_CPU_CYCLES,
+		.disabled = 0,
+		.exclude_kernel = 0,
+		.exclude_user = 1,
+		.exclude_idle = 1,
+		.exclude_hv = 1,
+	};
+	pgdat->kmigraterd_event = perf_event_create_kernel_counter(&attr, -1, current, NULL, NULL);
+	if (IS_ERR(pgdat->kmigraterd_event)) {
+		pr_err("Fails to create perf event for kmigraterd on node %d\n", nid);
+		return -1;
+	}
 
     if (htmm_cxl_mode) {
 		if (nid == 0)

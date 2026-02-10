@@ -20,6 +20,7 @@
 #include <linux/pm_runtime.h>
 #include <linux/swap.h>
 #include <linux/slab.h>
+#include <linux/htmm.h>
 
 static struct bus_type node_subsys = {
 	.name = "node",
@@ -666,6 +667,7 @@ static int register_node(struct node *node, int num)
 		hugetlb_register_node(node);
 
 		compaction_register_node(node);
+		htmm_register_node(node);
 	}
 	return error;
 }

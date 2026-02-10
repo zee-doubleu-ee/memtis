@@ -237,3 +237,20 @@ extern void kmigraterd_stop(void);
 extern int register_htmm_notifier(struct notifier_block *nb);
 extern int unregister_htmm_notifier(struct notifier_block *nb);
 int htmm_notifier_call_chain(enum htmm_event_t val, void *data);
+
+struct node;
+#ifdef CONFIG_HTMM
+extern int htmm_register_node(struct node *node);
+extern void htmm_unregister_node(struct node *node);
+
+#else
+
+static inline int htmm_register_node(struct node *node)
+{
+	return 0;
+}
+
+static inline void htmm_unregister_node(struct node *node)
+{
+}
+#endif

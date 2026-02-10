@@ -16,6 +16,7 @@
 #include <linux/math.h>
 #include <linux/random.h>
 #include <trace/events/htmm.h>
+#include <linux/perf_event.h>
 
 #include "internal.h"
 #include <asm/pgtable.h>
@@ -1451,6 +1452,28 @@ mmap_unlock:
     mmap_read_unlock(mm);
 put_task:
     put_pid(pid_struct);
+}
+
+static ssize_t kmigraterd_cycles_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	u64 enabled, running, cycles = 0;
+	struct pglist_data *pgdat = NODE_DATA(dev->id);
+	if (READ_ONCE(pgdat->kmigraterd_event))
+		cycles = perf_event_read_value(pgdat->kmigraterd_event, &enabled, &running);
+	return sysfs_emit(buf, "%llu\n", cycles);
+}
+static DEVICE_ATTR_RO(kmigraterd_cycles);
+
+int htmm_register_node(struct node *node)
+{
+	device_create_file(&node->dev, &dev_attr_kmigraterd_cycles);
+	return 0;
+}
+
+void htmm_unregister_node(struct node *node)
+{
+	device_remove_file(&node->dev, &dev_attr_kmigraterd_cycles);
 }
 
 
