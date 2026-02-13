@@ -51,6 +51,7 @@
 #include <linux/oom.h>
 #include <linux/memory.h>
 #include <linux/htmm.h>
+#include <linux/ktime.h> // 시간 측정을 위한 도구
 
 #include <asm/tlbflush.h>
 
@@ -58,6 +59,8 @@
 #include <trace/events/migrate.h>
 
 #include "internal.h"
+
+u64 total_flush_time = 0;
 
 int isolate_movable_page(struct page *page, isolate_mode_t mode)
 {
@@ -1168,7 +1171,7 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
 		/* Establish migration ptes */
 		VM_BUG_ON_PAGE(PageAnon(page) && !PageKsm(page) && !anon_vma,
 				page);
-		try_to_migrate(page, 0);
+		try_to_migrate(page, 0); // 이 페이지(page)와 연결된 page들을 인자로 하여 migrate시킬 준비 -> rmap.c의 try_to_migrate()으로 이동
 		page_was_mapped = true;
 	}
 
@@ -1579,6 +1582,16 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
 	LIST_HEAD(ret_pages);
 	bool nosplit = (reason == MR_NUMA_MISPLACED);
 
+	// ***************** Start time checking *****************
+	//jiffies는 해상도가 낮고, 다소 부정확 -> ktimes (ns 단위) 사용
+	ktime_t start_time, end_time;
+	// s64 = linux 커널 버전의 long long
+	s64 ns_checking;
+	total_flush_time = 0; // 함수를 시작할 때마다 0으로 리셋해줘야 함
+	start_time = ktime_get();
+
+
+
 	trace_mm_migrate_pages_start(mode, reason);
 
 	if (!swapwrite)
@@ -1718,6 +1731,14 @@ out:
 
 	if (ret_succeeded)
 		*ret_succeeded = nr_succeeded;
+
+	// ***************** End time checking *****************
+	end_time = ktime_get();
+	ktime_t time_diff = end_time - start_time;
+	ns_checking = ktime_to_ns(time_diff);
+
+	printk(KERN_INFO "[KERNEL / MEMTIS TLB TASK] Finished Migrating Pages : Migrated %d pages, Time : %lld ns\n", nr_succeeded, ns_checking);
+	printk(KERN_INFO "[KERNEL / MEMTIS TLB TASK] Finished Migrating Pages : TLB Shootdown Time : %llu ns\n", total_flush_time);
 
 	return rc;
 }

@@ -73,6 +73,7 @@
 #include <linux/page_idle.h>
 #include <linux/memremap.h>
 #include <linux/userfaultfd_k.h>
+#include <linux/ktime.h>
 
 #ifdef CONFIG_HTMM
 #include <linux/random.h>
@@ -84,6 +85,7 @@
 
 #include "internal.h"
 
+extern u64 total_flush_time;
 static struct kmem_cache *anon_vma_cachep;
 static struct kmem_cache *anon_vma_chain_cachep;
 
@@ -1921,8 +1923,11 @@ void try_to_unmap(struct page *page, enum ttu_flags flags)
  * If TTU_SPLIT_HUGE_PMD is specified any PMD mappings will be split into PTEs
  * containing migration entries.
  */
-static bool try_to_migrate_one(struct page *page, struct vm_area_struct *vma,
-		     unsigned long address, void *arg)
+ // Reverse Mapping(rmap)의 핵심 역할
+ // VA-PA 연결을 끝는 작업을 수행
+ // 1. 해당 VA에 대응하는 PTE 탐색 -> Unmap/Nuke (이떄, ptep_clear_flush)를 호출하여 TLB Shootdown 발생 -> Migration Entry를 해당 PTE 자리에 남겨 Migration중임을 기록 (만약 다른 프로세스가 이 VA에 접근하면 Migration이 완료될때까지 대기)
+static bool try_to_migrate_one(struct page *page, struct vm_area_struct *vma, unsigned long address, void *arg)
+// page: 이사갈 physical page, vma : 해당 페이지가 속한 가상 메모리 영역 (heap, stack 등..), address : VA주소, arg : Migration 중 필요한 flag
 {
 	struct mm_struct *mm = vma->vm_mm;
 	struct page_vma_mapped_walk pvmw = {
@@ -2026,9 +2031,17 @@ static bool try_to_migrate_one(struct page *page, struct vm_area_struct *vma,
 			}
 		}
 
+		// ********* Before 시간 측정 *********
+		ktime_t time_before = ktime_get();
+
 		/* Nuke the page table entry. */
 		flush_cache_page(vma, address, pte_pfn(*pvmw.pte));
 		pteval = ptep_clear_flush(vma, address, pvmw.pte);
+
+		// ********* After 시간 측정 *********
+		ktime_t time_after = ktime_get();
+		total_flush_time += ktime_to_ns(time_after-time_before);
+
 
 		/* Move the dirty bit to the page. Now the pte is gone. */
 		if (pte_dirty(pteval))
@@ -2160,7 +2173,7 @@ static bool try_to_migrate_one(struct page *page, struct vm_area_struct *vma,
 void try_to_migrate(struct page *page, enum ttu_flags flags)
 {
 	struct rmap_walk_control rwc = {
-		.rmap_one = try_to_migrate_one,
+		.rmap_one = try_to_migrate_one, // try_to_migrate 내 콜백함수 등록
 		.arg = (void *)flags,
 		.done = page_not_mapped,
 		.anon_lock = page_lock_anon_vma_read,
