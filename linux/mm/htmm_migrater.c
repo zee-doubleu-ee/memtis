@@ -947,8 +947,6 @@ static int kmigraterd_demotion(pg_data_t *pgdat)
     if (!cpumask_empty(cpumask))
 	set_cpus_allowed_ptr(pgdat->kmigraterd, cpumask);
 
-	perf_event_enable(pgdat->kmigraterd_event);
-
     for ( ; ; ) {
 	struct mem_cgroup_per_node *pn;
 	struct mem_cgroup *memcg;
@@ -1026,8 +1024,6 @@ static int kmigraterd_promotion(pg_data_t *pgdat)
     if (!cpumask_empty(cpumask))
 		set_cpus_allowed_ptr(pgdat->kmigraterd, cpumask);
 	
-	perf_event_enable(pgdat->kmigraterd_event);
-	
     for ( ; ; ) {
 	struct mem_cgroup_per_node *pn;
 	struct mem_cgroup *memcg;
@@ -1100,11 +1096,6 @@ static int kmigraterd(void *p)
 		.exclude_idle = 1,
 		.exclude_hv = 1,
 	};
-	pgdat->kmigraterd_event = perf_event_create_kernel_counter(&attr, -1, current, NULL, NULL);
-	if (IS_ERR(pgdat->kmigraterd_event)) {
-		pr_err("Fails to create perf event for kmigraterd on node %d\n", nid);
-		return -1;
-	}
 
     if (htmm_cxl_mode) {
 		if (nid == 0)

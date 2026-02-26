@@ -667,7 +667,6 @@ static int register_node(struct node *node, int num)
 		hugetlb_register_node(node);
 
 		compaction_register_node(node);
-		htmm_register_node(node);
 	}
 	return error;
 }

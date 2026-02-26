@@ -892,7 +892,6 @@ typedef struct pglist_data {
 	struct list_head    kmigraterd_head;
 	spinlock_t	    kmigraterd_lock;
 	wait_queue_head_t   kmigraterd_wait;
-	struct perf_event *kmigraterd_event;
 #endif
 	/* Fields commonly accessed by the page reclaim scanner */
 

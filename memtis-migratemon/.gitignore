@@ -1,0 +1,38 @@
+# Kernel build artifacts
+*.o
+*.ko
+*.mod
+*.mod.c
+*.mod.o
+*.symvers
+*.order
+
+# Module metadata
+Module.symvers
+modules.order
+
+# Generated dependency files
+*.cmd
+
+# Temporary files
+*.tmp
+*.tmp_versions/
+.tmp_versions/
+
+# Backup / editor files
+*~
+*.swp
+*.swo
+*.bak
+
+# Logs
+*.log
+
+# cscope / tags
+cscope.*
+tags
+TAGS
+
+# Build directories (if you use one)
+build/
+out/

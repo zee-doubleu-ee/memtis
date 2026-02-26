@@ -242,7 +242,7 @@ struct node;
 #ifdef CONFIG_HTMM
 extern int htmm_register_node(struct node *node);
 extern void htmm_unregister_node(struct node *node);
-
+extern struct kobject *htmm_kobj;
 #else
 
 static inline int htmm_register_node(struct node *node)

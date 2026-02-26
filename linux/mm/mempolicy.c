@@ -3636,7 +3636,6 @@ static const struct attribute_group htmm_attr_group = {
 static int __init htmm_init_sysfs(void)
 {
 	int err;
-	struct kobject *htmm_kobj;
 
     	htmm_kobj = kobject_create_and_add("htmm", mm_kobj);
 	if (!htmm_kobj) {
@@ -3652,6 +3651,7 @@ static int __init htmm_init_sysfs(void)
 
 delete_obj:
 	kobject_put(htmm_kobj);
+	htmm_kobj = NULL;
 	return err;
 }
 subsys_initcall(htmm_init_sysfs);
