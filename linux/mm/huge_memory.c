@@ -2828,7 +2828,7 @@ int split_huge_page_to_list(struct page *page, struct list_head *list)
 			}
 		}
 #ifdef CONFIG_HTMM
-		{
+		if (PageHtmm(&head[3])) {
 		    struct mem_cgroup *memcg = page_memcg(head);
 		    unsigned int idx;
 
