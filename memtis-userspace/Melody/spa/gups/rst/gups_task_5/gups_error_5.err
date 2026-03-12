@@ -1,0 +1,50 @@
+200000000 updates per thread (8 threads)
+field of 2^30 (1073741824) bytes (=1 GB)
+8 byte element size (134217728 elements total)
+Elements per thread: 16777216
+Access probability: 0 percentage
+Access type: read and write
+prefill...
+Initialization time: 0.6176 seconds.
+i : 0, field : 0x1555152e7000, size : 16777216, hot size : 0
+i : 1, field : 0x15551d2e7000, size : 16777216, hot size : 0
+i : 2, field : 0x1555252e7000, size : 16777216, hot size : 0
+i : 3, field : 0x15552d2e7000, size : 16777216, hot size : 0
+i : 4, field : 0x1555352e7000, size : 16777216, hot size : 0
+i : 5, field : 0x15553d2e7000, size : 16777216, hot size : 0
+i : 6, field : 0x1555452e7000, size : 16777216, hot size : 0
+i : 7, field : 0x15554d2e7000, size : 16777216, hot size : 0
+try do gups
+dummy: 0
+dummy: 0
+dummy: 0
+dummy: 0
+dummy: 0
+dummy: 0
+dummy: 0
+dummy: 0
+200000000 updates per thread (8 threads)
+field of 2^30 (1073741824) bytes (=1 GB)
+8 byte element size (134217728 elements total)
+Elements per thread: 16777216
+Access probability: 0 percentage
+Access type: read and write
+prefill...
+Initialization time: 0.8278 seconds.
+i : 0, field : 0x1555152e7000, size : 16777216, hot size : 0
+i : 1, field : 0x15551d2e7000, size : 16777216, hot size : 0
+i : 2, field : 0x1555252e7000, size : 16777216, hot size : 0
+i : 3, field : 0x15552d2e7000, size : 16777216, hot size : 0
+i : 4, field : 0x1555352e7000, size : 16777216, hot size : 0
+i : 5, field : 0x15553d2e7000, size : 16777216, hot size : 0
+i : 6, field : 0x1555452e7000, size : 16777216, hot size : 0
+i : 7, field : 0x15554d2e7000, size : 16777216, hot size : 0
+try do gups
+dummy: 0
+dummy: 0
+dummy: 0
+dummy: 0
+dummy: 0
+dummy: 0
+dummy: 0
+dummy: 0

@@ -1,0 +1,22 @@
+100000000 updates per thread (1 threads)
+field of 2^27 (134217728) bytes (=0 GB)
+8 byte element size (16777216 elements total)
+Elements per thread: 16777216
+Access probability: 0 percentage
+Access type: read and write
+prefill...
+Initialization time: 0.0836 seconds.
+i : 0, field : 0x15554d200000, size : 16777216, hot size : 0
+try do gups
+dummy: 0
+100000000 updates per thread (1 threads)
+field of 2^27 (134217728) bytes (=0 GB)
+8 byte element size (16777216 elements total)
+Elements per thread: 16777216
+Access probability: 0 percentage
+Access type: read and write
+prefill...
+Initialization time: 0.1103 seconds.
+i : 0, field : 0x15554d200000, size : 16777216, hot size : 0
+try do gups
+dummy: 0
